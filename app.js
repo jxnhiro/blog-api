@@ -18,7 +18,7 @@ app.use(bodyParser.json());
 app.use("/feed", feedRoutes);
 
 app.use((error, req, res, next) => {
-  console.log(`Error: ${error}`);
+  console.log(`${error}`);
 
   const statusCode = error.statusCode || 500;
   const message = error.message;

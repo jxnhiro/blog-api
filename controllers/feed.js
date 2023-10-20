@@ -1,21 +1,19 @@
 const { validationResult } = require("express-validator");
+
 const Post = require("../models/post");
+const utilities = require("../utilities/utilities");
 
 exports.getPosts = (req, res, next) => {
-  res.status(200).json({
-    posts: [
-      {
-        _id: "1",
-        title: "This is your first content",
-        content: "This is your content",
-        imageUrl: "images/duck.jpg",
-        creator: {
-          name: "Maximillian",
-        },
-        createdAt: new Date(),
-      },
-    ],
-  });
+  Post.find()
+    .then((posts) => {
+      res.status(200).json({
+        message: "Posts fetched successfully",
+        posts: posts,
+      });
+    })
+    .catch((err) => {
+      utilities.checkForStatusCode(err);
+    });
 };
 
 exports.createPost = (req, res, next) => {
@@ -48,9 +46,27 @@ exports.createPost = (req, res, next) => {
       });
     })
     .catch((err) => {
-      if (!err.statusCode) {
-        err.statusCode = 500;
+      utilities.checkForStatusCode(err);
+    });
+};
+
+exports.getPost = (req, res, next) => {
+  const postId = req.params.postId;
+  console.log(`Post ID: ${postId}`);
+
+  Post.findById(postId)
+    .then((post) => {
+      if (!post) {
+        const error = new Error("There is no post with that ID.");
+        error.statusCode = 404;
+        throw error;
       }
-      next(err);
+      res.status(200).json({
+        message: "Post Successfully Fetched",
+        post: post,
+      });
+    })
+    .catch((err) => {
+      utilities.checkForStatusCode(err);
     });
 };
