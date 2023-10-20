@@ -8,4 +8,4 @@ router.get('/posts', feedController.getPosts);
 
 router.post('/post', feedController.createPost);
 
-exports.module = router;
+module.exports = router;
