@@ -4,17 +4,26 @@ const mongoose = require("mongoose");
 const env = require("dotenv").config();
 const cors = require("cors");
 const path = require("path");
+const multer = require("multer");
 
 const feedRoutes = require("./routes/feed");
 const { watch } = require("./models/post");
+const utilities = require("./utilities/utilities");
+
 const MONGO_URL = process.env.MONGODB_URI;
+
 const app = express();
 
 app.use("/images", express.static(path.join(__dirname, "images")));
 
 app.use(cors());
 app.use(bodyParser.json());
-
+app.use(
+  multer({
+    storage: utilities.fileStorage,
+    fileFilter: utilities.fileFilter,
+  }).single("image"),
+);
 app.use("/feed", feedRoutes);
 
 app.use((error, req, res, next) => {
@@ -28,6 +37,7 @@ app.use((error, req, res, next) => {
     description: message,
   });
 });
+
 mongoose
   .connect(MONGO_URL)
   .then(() => {

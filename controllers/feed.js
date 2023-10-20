@@ -25,12 +25,19 @@ exports.createPost = (req, res, next) => {
     throw error;
   }
 
+  if (!req.file) {
+    const error = new Error("No image is found.");
+    error.statusCode = 422;
+    throw error;
+  }
+
   const title = req.body.title;
   const content = req.body.content;
+  const imageUrl = req.file.path.replace("\\", "/");
   const post = new Post({
     title: title,
     content: content,
-    imageUrl: "images/duck.jpg",
+    imageUrl: imageUrl,
     creator: {
       name: "Maximillian",
     },
@@ -52,7 +59,6 @@ exports.createPost = (req, res, next) => {
 
 exports.getPost = (req, res, next) => {
   const postId = req.params.postId;
-  console.log(`Post ID: ${postId}`);
 
   Post.findById(postId)
     .then((post) => {
@@ -64,6 +70,60 @@ exports.getPost = (req, res, next) => {
       res.status(200).json({
         message: "Post Successfully Fetched",
         post: post,
+      });
+    })
+    .catch((err) => {
+      utilities.checkForStatusCode(err);
+    });
+};
+
+exports.updatePost = (req, res, next) => {
+  const errors = validationResult(req);
+
+  if (!errors.isEmpty()) {
+    const error = new Error("Entered data has the incorrect format.");
+    error.statusCode = 422;
+    throw error;
+  }
+
+  const postId = req.params.postId;
+  const title = req.body.title;
+  const content = req.body.content;
+
+  let imageUrl = req.body.image;
+
+  if (req.file) {
+    imageUrl = req.file.path;
+  }
+
+  if (!imageUrl) {
+    const error = Error("No File Picked");
+    error.statusCode = 422;
+    throw error;
+  }
+
+  Post.findById(postId)
+    .then((post) => {
+      if (!post) {
+        const error = new Error("There is no post with that ID.");
+        error.statusCode = 404;
+        throw error;
+      }
+
+      if (imageUrl !== post.imageUrl) {
+        utilities.clearImage(post.imageUrl);
+      }
+
+      post.title = title;
+      post.content = content;
+      post.imageUrl = imageUrl;
+
+      return post.save();
+    })
+    .then((result) => {
+      res.status(200).json({
+        message: `Post with ID ${postId} is successfully updated!`,
+        post: result,
       });
     })
     .catch((err) => {
