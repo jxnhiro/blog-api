@@ -1,6 +1,8 @@
 const { validationResult } = require("express-validator");
 
 const Post = require("../models/post");
+const User = require("../models/user");
+
 const utilities = require("../utilities/utilities");
 
 exports.getPosts = (req, res, next) => {
@@ -26,6 +28,7 @@ exports.getPosts = (req, res, next) => {
     })
     .catch((err) => {
       utilities.checkForStatusCode(err);
+      next(err);
     });
 };
 
@@ -47,26 +50,38 @@ exports.createPost = (req, res, next) => {
   const title = req.body.title;
   const content = req.body.content;
   const imageUrl = req.file.path.replace("\\", "/");
+
+  let creator;
+
   const post = new Post({
     title: title,
     content: content,
     imageUrl: imageUrl,
-    creator: {
-      name: "Maximillian",
-    },
+    creator: req.userId,
   });
 
   post
     .save()
     .then((result) => {
-      console.log("Post Result: ", result);
+      return User.findById(req.userId);
+    })
+    .then((user) => {
+      creator = user;
+
+      user.posts.push(post);
+
+      return user.save();
+    })
+    .then((result) => {
       res.status(201).json({
         message: "Post created successfully!",
-        post: result,
+        post: post,
+        creator: { _id: creator._id, name: creator.name },
       });
     })
     .catch((err) => {
       utilities.checkForStatusCode(err);
+      next(err);
     });
 };
 
@@ -87,6 +102,7 @@ exports.getPost = (req, res, next) => {
     })
     .catch((err) => {
       utilities.checkForStatusCode(err);
+      next(err);
     });
 };
 
@@ -123,6 +139,12 @@ exports.updatePost = (req, res, next) => {
         throw error;
       }
 
+      if (post.creator.toString() !== req.userId) {
+        const error = new Error("User has no permission to update post.");
+        error.statusCode = 403;
+        throw error;
+      }
+
       if (imageUrl !== post.imageUrl) {
         utilities.clearImage(post.imageUrl);
       }
@@ -141,6 +163,8 @@ exports.updatePost = (req, res, next) => {
     })
     .catch((err) => {
       utilities.checkForStatusCode(err);
+
+      next(err);
     });
 };
 
@@ -155,15 +179,17 @@ exports.deletePost = (req, res, next) => {
         throw error;
       }
 
-      //TODO: Check for logged in user.
+      if (post.creator.toString() !== req.userId) {
+        const error = new Error("User is not authorized to delete post.");
+        error.statusCode = 403;
+        throw error;
+      }
 
       utilities.clearImage(post.imageUrl);
 
       return Post.findByIdAndRemove(postId);
     })
     .then((result) => {
-      console.log(result);
-
       res.status(200).json({
         message: "Successfully deleted post",
         descrption: result,
@@ -171,5 +197,7 @@ exports.deletePost = (req, res, next) => {
     })
     .catch((err) => {
       utilities.checkForStatusCode(err);
+
+      next(err);
     });
 };
