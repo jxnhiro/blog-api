@@ -209,3 +209,62 @@ exports.deletePost = (req, res, next) => {
       next(err);
     });
 };
+
+exports.getStatus = (req, res, next) => {
+  if (!req.userId) {
+    const error = new Error("User is not authorized");
+    error.statusCode = 403;
+    throw err;
+  }
+
+  User.findById(req.userId)
+    .then((user) => {
+      if (!user) {
+        const error = new Error("User not found");
+        error.statusCode = 404;
+        throw err;
+      }
+
+      res.status(200).json({
+        message: "Successfully fetched status",
+        status: user.status || "User has set no status yet",
+      });
+    })
+    .catch((err) => {
+      utilities.checkForStatusCode(err);
+      next(err);
+    });
+};
+
+exports.updateStatus = (req, res, next) => {
+  if (!req.userId) {
+    const error = new Error("User is not authorized");
+    error.statusCode = 403;
+    throw err;
+  }
+
+  const status = req.body.status;
+
+  User.findById(req.userId)
+    .then((user) => {
+      if (!user) {
+        const error = new Error("User not found");
+        error.statusCode = 404;
+        throw err;
+      }
+
+      user.status = status;
+
+      user.save();
+    })
+    .then((result) => {
+      res.status(201).json({
+        message: "Successfully updated status",
+        status: status,
+      });
+    })
+    .catch((err) => {
+      utilities.checkForStatusCode(err);
+      next(err);
+    });
+};
