@@ -4,11 +4,24 @@ const Post = require("../models/post");
 const utilities = require("../utilities/utilities");
 
 exports.getPosts = (req, res, next) => {
+  const currentPage = req.query.page || 1;
+  const perPage = 2;
+  const skipIncrement = (currentPage - 1) * perPage;
+
+  let totalItems;
+
   Post.find()
+    .countDocuments()
+    .then((count) => {
+      totalItems = count;
+
+      return Post.find().skip(skipIncrement).limit(perPage);
+    })
     .then((posts) => {
       res.status(200).json({
         message: "Posts fetched successfully",
         posts: posts,
+        totalItems: totalItems,
       });
     })
     .catch((err) => {

@@ -7,6 +7,8 @@ const path = require("path");
 const multer = require("multer");
 
 const feedRoutes = require("./routes/feed");
+const authRoutes = require("./routes/auth");
+
 const { watch } = require("./models/post");
 const utilities = require("./utilities/utilities");
 
@@ -25,6 +27,7 @@ app.use(
   }).single("image"),
 );
 app.use("/feed", feedRoutes);
+app.use("/auth", authRoutes);
 
 app.use((error, req, res, next) => {
   console.log(`${error}`);
