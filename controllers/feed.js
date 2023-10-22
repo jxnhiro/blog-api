@@ -5,31 +5,34 @@ const User = require("../models/user");
 
 const utilities = require("../utilities/utilities");
 
-exports.getPosts = (req, res, next) => {
+exports.getPosts = async (req, res, next) => {
   const currentPage = req.query.page || 1;
   const perPage = 2;
   const skipIncrement = (currentPage - 1) * perPage;
 
   let totalItems;
+  let posts;
 
-  Post.find()
-    .countDocuments()
-    .then((count) => {
-      totalItems = count;
+  try {
+    totalItems = await Post.find().countDocuments();
+  } catch (err) {
+    const error = new Error("Cannot count documents.");
+    error.statusCode = 404;
+    next(error);
+  }
 
-      return Post.find().skip(skipIncrement).limit(perPage);
-    })
-    .then((posts) => {
-      res.status(200).json({
-        message: "Posts fetched successfully",
-        posts: posts,
-        totalItems: totalItems,
-      });
-    })
-    .catch((err) => {
-      utilities.checkForStatusCode(err);
-      next(err);
-    });
+  try {
+    posts = await Post.find().skip(skipIncrement).limit(perPage);
+  } catch (err) {
+    utilities.checkForStatusCode(err);
+    next(err);
+  }
+
+  res.status(200).json({
+    message: "Posts are fetched successfully",
+    posts: posts,
+    totalItems: totalItems,
+  });
 };
 
 exports.createPost = (req, res, next) => {
