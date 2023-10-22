@@ -4,6 +4,7 @@ const Post = require("../models/post");
 const User = require("../models/user");
 
 const utilities = require("../utilities/utilities");
+const io = require("../socket");
 
 exports.getPosts = async (req, res, next) => {
   const currentPage = req.query.page || 1;
@@ -22,7 +23,11 @@ exports.getPosts = async (req, res, next) => {
   }
 
   try {
-    posts = await Post.find().skip(skipIncrement).limit(perPage);
+    posts = await Post.find()
+      .populate("creator")
+      .sort({ createdAt: -1 })
+      .skip(skipIncrement)
+      .limit(perPage);
   } catch (err) {
     utilities.checkForStatusCode(err);
     return next(err);
@@ -87,6 +92,11 @@ exports.createPost = async (req, res, next) => {
     return next(error);
   }
 
+  io.getIO().emit("posts", {
+    action: "create",
+    post: { ...post._doc, creator: { _id: req.userId, name: req.name } },
+  });
+
   res.status(201).json({
     message: "Post created successfully!",
     post: post,
@@ -147,7 +157,7 @@ exports.updatePost = async (req, res, next) => {
   let post;
 
   try {
-    post = await Post.findById(postId);
+    post = await Post.findById(postId).populate("creator");
   } catch (err) {
     const error = new Error("Internal server error.");
     error.statusCode = 500;
@@ -160,7 +170,7 @@ exports.updatePost = async (req, res, next) => {
     return next(error);
   }
 
-  if (post.creator.toString() !== req.userId) {
+  if (post.creator._id.toString() !== req.userId) {
     const error = new Error("User has no permission to update post.");
     error.statusCode = 403;
     return next(error);
@@ -181,6 +191,11 @@ exports.updatePost = async (req, res, next) => {
     error.statusCode = 400;
     return next(error);
   }
+
+  io.getIO().emit("posts", {
+    action: "update",
+    post: post,
+  });
 
   res.status(200).json({
     message: `Post with ID ${postId} is successfully updated!`,
@@ -236,6 +251,11 @@ exports.deletePost = async (req, res, next) => {
     error.statusCode = 400;
     return next(error);
   }
+
+  io.getIO().emit("posts", {
+    action: "delete",
+    post: postId,
+  });
 
   res.status(200).json({
     message: `Successfully deleted post of ${postId}`,
