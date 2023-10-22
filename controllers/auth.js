@@ -14,7 +14,7 @@ exports.createUser = async (req, res, next) => {
   if (!errors.isEmpty()) {
     const error = new Error("User criteria validation failed.");
     error.statusCode = 422;
-    throw error;
+    return next(error);
   }
 
   const name = req.body.name;
