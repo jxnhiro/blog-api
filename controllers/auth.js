@@ -8,7 +8,7 @@ const utilities = require("../utilities/utilities");
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-exports.createUser = (req, res, next) => {
+exports.createUser = async (req, res, next) => {
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {
@@ -21,68 +21,77 @@ exports.createUser = (req, res, next) => {
   const email = req.body.email;
   const password = req.body.password;
 
-  bcrypt
-    .hash(password, 12)
-    .then((hashedPassword) => {
-      const user = new User({
-        email: email,
-        password: hashedPassword,
-        name: name,
-      });
+  let hashedPassword;
 
-      return user.save();
-    })
-    .then((result) => {
-      res.status(201).json({
-        message: `User of ID: ${result._id} successfully created`,
-      });
-    })
-    .catch((err) => {
-      utilities.checkForStatusCode(err);
-    });
+  try {
+    hashedPassword = await bcrypt.hash(password, 12);
+  } catch (err) {
+    const error = new Error("Failed to encrypt password");
+    error.statusCode = 400;
+    return next(error);
+  }
+
+  const user = new User({
+    email: email,
+    password: hashedPassword,
+    name: name,
+  });
+
+  try {
+    await user.save();
+  } catch (err) {
+    const error = new Error("Failed to save user");
+    error.statusCode = 400;
+    return next(error);
+  }
+
+  res.status(201).json({
+    message: `User of ID: ${user._id} successfully created`,
+  });
 };
 
-exports.logIn = (req, res, next) => {
+exports.logIn = async (req, res, next) => {
   const email = req.body.email;
   const password = req.body.password;
 
-  let loadedUser;
-  User.findOne({ email: email })
-    .then((user) => {
-      if (!user) {
-        const error = new Error("User could not be found");
-        error.statusCode = 404;
-        throw error;
-      }
+  let user;
 
-      loadedUser = user;
-      return bcrypt.compare(password, user.password);
-    })
-    .then((isEqual) => {
-      if (!isEqual) {
-        const error = new Error("Password is incorrect");
-        error.statusCode = 401;
-        throw error;
-      }
+  try {
+    user = await User.findOne({ email: email });
+  } catch (err) {
+    const error = new Error("Failed to find user with the email.");
+    error.statusCode = 404;
+    return next(error);
+  }
 
-      const token = jwt.sign(
-        {
-          email: loadedUser.email,
-          userId: loadedUser._id.toString(),
-        },
-        JWT_SECRET,
-        {
-          expiresIn: "1h",
-        },
-      );
+  if (!user) {
+    const error = new Error("User could not be found");
+    error.statusCode = 404;
+    return next(error);
+  }
 
-      res.status(200).json({
-        message: "Successfully logged in",
-        userId: loadedUser._id.toString(),
-        token: token,
-      });
-    })
-    .catch((err) => {
-      utilities.checkForStatusCode(err);
-    });
+  try {
+    await bcrypt.compare(password, user.password);
+  } catch (err) {
+    const error = new Error("Wrong password");
+    error.statusCode = 401;
+    return next(error);
+  }
+
+  const token = jwt.sign(
+    {
+      email: user.email,
+      userId: user._id.toString(),
+    },
+    JWT_SECRET,
+    {
+      expiresIn: "1h",
+    },
+  );
+
+  res.status(200).json({
+    message: "Successfully logged in",
+    userId: user._id.toString(),
+    token: token,
+  });
 };
