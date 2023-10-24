@@ -5,12 +5,12 @@ const env = require("dotenv").config();
 const cors = require("cors");
 const path = require("path");
 const multer = require("multer");
+const { graphqlHTTP } = require("express-graphql");
 
-const feedRoutes = require("./routes/feed");
-const authRoutes = require("./routes/auth");
-
-const { watch } = require("./models/post");
 const utilities = require("./utilities/utilities");
+
+const graphqlSchema = require("./graphql/schema");
+const graphqlResolver = require("./graphql/resolvers");
 
 const MONGO_URL = process.env.MONGODB_URI;
 
@@ -26,8 +26,15 @@ app.use(
     fileFilter: utilities.fileFilter,
   }).single("image"),
 );
-app.use("/feed", feedRoutes);
-app.use("/auth", authRoutes);
+
+app.use(
+  "/graphql",
+  graphqlHTTP({
+    schema: graphqlSchema,
+    rootValue: graphqlResolver,
+    graphiql: true,
+  }),
+);
 
 app.use((error, req, res, next) => {
   console.log(`${error}`);
@@ -44,13 +51,7 @@ app.use((error, req, res, next) => {
 mongoose
   .connect(MONGO_URL)
   .then(() => {
-    const server = app.listen(8080);
-    const io = require("./socket").init(server);
-
-    io.on("connection", (socket) => {
-      console.log("Client connected.");
-    });
-
+    app.listen(8080);
     console.log("Connected to MongoDB Database");
   })
   .catch((err) => {
