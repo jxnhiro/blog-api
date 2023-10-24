@@ -11,6 +11,7 @@ const utilities = require("./utilities/utilities");
 
 const graphqlSchema = require("./graphql/schema");
 const graphqlResolver = require("./graphql/resolvers");
+const auth = require("./middlewares/auth");
 
 const MONGO_URL = process.env.MONGODB_URI;
 
@@ -26,6 +27,8 @@ app.use(
     fileFilter: utilities.fileFilter,
   }).single("image"),
 );
+
+app.use(auth);
 
 app.use(
   "/graphql",
