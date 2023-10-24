@@ -1,0 +1,1 @@
+Validations in GraphQL are in the resolvers and not in the routes, as the endpoints are in the resolvers.
