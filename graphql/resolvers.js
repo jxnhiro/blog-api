@@ -145,7 +145,14 @@ module.exports = {
     }
 
     user.posts.push(createdPost);
-    user.save();
+
+    try {
+      await user.save();
+    } catch (err) {
+      const error = new Error("Failed to save user");
+      error.code = 500;
+      throw error;
+    }
 
     return {
       ...createdPost._doc,
@@ -153,5 +160,18 @@ module.exports = {
       createdAt: createdPost.createdAt.toISOString(),
       updatedAt: createdPost.updatedAt.toISOString(),
     };
+  },
+  getAllPosts: async function () {
+    let posts;
+
+    try {
+      posts = await Post.find().populate("creator");
+    } catch (err) {
+      const error = new Error("Internal server error.");
+      error.code = 500;
+      throw error;
+    }
+
+    return posts;
   },
 };
