@@ -119,7 +119,7 @@ module.exports = {
       throw error;
     }
 
-    const user = User.findById(req.userId);
+    const user = await User.findById(req.userId);
 
     if (!user) {
       const error = new Error("Invalid user.");
@@ -127,13 +127,11 @@ module.exports = {
       throw error;
     }
 
-    console.log("User", user._id);
-
     const post = new Post({
       title: postInput.title,
       content: postInput.content,
       imageUrl: postInput.imageUrl,
-      creator: user._id,
+      creator: user,
     });
 
     let createdPost;
@@ -141,11 +139,13 @@ module.exports = {
     try {
       createdPost = await post.save();
     } catch (err) {
-      const error = new Error("Failed to save post");
+      const error = new Error("Failed to create post");
+      error.code = 500;
       throw error;
     }
 
     user.posts.push(createdPost);
+    user.save();
 
     return {
       ...createdPost._doc,
