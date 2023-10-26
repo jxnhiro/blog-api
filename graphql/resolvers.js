@@ -331,4 +331,52 @@ module.exports = {
 
     return true;
   },
+  status: async function (args, req) {
+    if (!req.isAuth) {
+      const error = new Error("Forbidden authorization");
+      error.code = 403;
+      throw error;
+    }
+
+    let user;
+
+    try {
+      user = await User.findById(req.userId);
+    } catch (err) {
+      const error = new Error("Cannot find user");
+      error.code = 403;
+      throw error;
+    }
+
+    return user.status;
+  },
+  updateStatus: async function ({ status }, req) {
+    if (!req.isAuth) {
+      const error = new Error("Forbidden authorization");
+      error.code = 403;
+      throw error;
+    }
+
+    let user;
+
+    try {
+      user = await User.findById(req.userId);
+    } catch (err) {
+      const error = new Error("Cannot find user");
+      error.code = 403;
+      throw error;
+    }
+
+    user.status = status;
+
+    try {
+      await user.save();
+    } catch (err) {
+      const error = new Error("Failed to save user");
+      error.code = 500;
+      throw error;
+    }
+
+    return true;
+  },
 };
