@@ -7,6 +7,7 @@ const jwt = require("jsonwebtoken");
 const env = require("dotenv").config();
 
 const JWT_SECRET = process.env.JWT_SECRET;
+const utilities = require("../utilities/utilities");
 
 module.exports = {
   createUser: async function ({ userInput }, req) {
@@ -17,7 +18,7 @@ module.exports = {
       errors.push({ message: "Email is invalid." });
     }
 
-    if (validator.isLength(userInput.password, { min: 5 })) {
+    if (!validator.isLength(userInput.password, { min: 5 })) {
       errors.push({ message: "Password is too short." });
     }
 
@@ -35,7 +36,7 @@ module.exports = {
       throw error;
     }
 
-    if (existingUser) {
+    if (existingUser.length > 0) {
       const error = new Error("User exists already!");
       throw error;
     }
@@ -230,13 +231,6 @@ module.exports = {
     return { ...post._doc, createdAt: post.createdAt.toISOString() };
   },
   updatePost: async function (args, req) {
-    //  input UpdateInputData {
-    //    postId: ID!
-    //    title: String!
-    //    content: String!
-    //    imageUrl: String!
-    //    updatedAt: String!
-    //  }
     if (!req.isAuth) {
       const error = new Error("Forbidden authorization");
       error.code = 403;
@@ -297,5 +291,44 @@ module.exports = {
     }
 
     return { ...savedPost._doc, createdAt: post.updatedAt.toISOString() };
+  },
+  deletePost: async function ({ postId }, req) {
+    if (!req.isAuth) {
+      const error = new Error("Forbidden authorization");
+      error.code = 403;
+      throw error;
+    }
+
+    let post;
+
+    try {
+      post = await Post.findById(postId);
+    } catch (err) {
+      const error = new Error("Cannot find post");
+      error.code = 404;
+      throw error;
+    }
+
+    if (post.creator._id.toString() !== req.userId.toString()) {
+      const error = new Error("Forbidden authorization");
+      error.code = 403;
+      throw error;
+    }
+
+    let deletePost;
+
+    try {
+      utilities.clearImage(post.imageUrl);
+    } catch (err) {
+      throw err;
+    }
+
+    try {
+      deletePost = await Post.findByIdAndDelete(postId);
+    } catch (err) {
+      return false;
+    }
+
+    return true;
   },
 };
