@@ -161,17 +161,141 @@ module.exports = {
       updatedAt: createdPost.updatedAt.toISOString(),
     };
   },
-  getAllPosts: async function () {
+  posts: async function ({ page }, req) {
+    if (!req.isAuth) {
+      const error = new Error("Authentication failed");
+      error.code = 403;
+      throw error;
+    }
+
+    if (!page) {
+      page = 1;
+    }
+
+    const perPage = 2;
+
     let posts;
 
     try {
-      posts = await Post.find().populate("creator");
+      posts = await Post.find()
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * perPage)
+        .limit(perPage)
+        .populate("creator");
     } catch (err) {
       const error = new Error("Internal server error.");
       error.code = 500;
       throw error;
     }
 
-    return posts;
+    let totalPost;
+
+    try {
+      totalPost = await Post.find().countDocuments();
+    } catch (err) {
+      const error = new Error("Cannot count documents");
+      error.code = 500;
+      throw error;
+    }
+
+    return {
+      posts: posts.map((p) => {
+        return {
+          ...p._doc,
+          _id: p._id.toString(),
+          createdAt: p.createdAt.toISOString(),
+          updatedAt: p.updatedAt.toISOString(),
+        };
+      }),
+      totalPost: totalPost,
+    };
+  },
+  post: async function ({ postId }, req) {
+    if (!req.isAuth) {
+      const error = new Error("Authorization forbidden");
+      error.code = 403;
+      throw error;
+    }
+
+    let post;
+
+    try {
+      post = await Post.findById(postId).populate("creator");
+    } catch (err) {
+      const error = new Error("Could not find a post with that ID");
+      error.code = 404;
+      throw error;
+    }
+
+    return { ...post._doc, createdAt: post.createdAt.toISOString() };
+  },
+  updatePost: async function (args, req) {
+    //  input UpdateInputData {
+    //    postId: ID!
+    //    title: String!
+    //    content: String!
+    //    imageUrl: String!
+    //    updatedAt: String!
+    //  }
+    if (!req.isAuth) {
+      const error = new Error("Forbidden authorization");
+      error.code = 403;
+      throw error;
+    }
+
+    const data = args.updateInput;
+
+    let post;
+
+    try {
+      post = await Post.findById(data.postId).populate("creator");
+    } catch (err) {
+      const error = new Error("Post not found.");
+      error.code = 404;
+      throw error;
+    }
+
+    if (post.creator._id.toString() !== req.userId.toString()) {
+      const error = new Error("Forbidden authorization");
+      error.code = 403;
+      throw error;
+    }
+
+    const errors = [];
+
+    if (!validator.isLength(data.title, { min: 5 })) {
+      errors.push({ message: "Title is invalid" });
+    }
+
+    if (!validator.isLength(data.content, { min: 5 })) {
+      errors.push({ message: "Content is invalid" });
+    }
+
+    if (errors.length > 0) {
+      const error = new Error("Invalid input.");
+      error.data = errors;
+      error.code = 422;
+
+      throw error;
+    }
+
+    post.title = data.title;
+    post.content = data.content;
+
+    if (data.imageUrl !== "undefined") {
+      post.imageUrl = data.imageUrl;
+    }
+
+    let savedPost;
+
+    try {
+      savedPost = await post.save();
+    } catch (err) {
+      const error = new Error("Failed to save post");
+      error.code = 500;
+      throw error;
+    }
+
+    return { ...savedPost._doc, createdAt: post.updatedAt.toISOString() };
   },
 };

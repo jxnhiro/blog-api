@@ -33,6 +33,8 @@ exports.fileFilter = (req, file, cb) => {
 exports.clearImage = (filePath) => {
   const modifiedFilePath = path.join(__dirname, "..", filePath);
 
+  console.log("File Path", modifiedFilePath);
+
   fs.unlink(modifiedFilePath, (err) => {
     if (err) {
       const error = new Error("Cannot delete image, as image is not found");
