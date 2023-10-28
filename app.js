@@ -10,6 +10,7 @@ const helmet = require("helmet");
 const compression = require("compression");
 const https = require("https");
 const fs = require("fs");
+const morgan = require("morgan");
 
 const utilities = require("./utilities/utilities");
 const graphqlSchema = require("./graphql/schema");
@@ -24,10 +25,10 @@ const privateKey = fs.readFileSync(path.join(__dirname, "ssl", "server.key"));
 const certificate = fs.readFileSync(path.join(__dirname, "ssl", "server.cert"));
 
 app.use("/images", express.static(path.join(__dirname, "images")));
-
 app.use(helmet());
 app.use(compression());
 app.use(cors());
+app.use(morgan("combined"));
 app.use(bodyParser.json());
 app.use(
   multer({
@@ -35,7 +36,6 @@ app.use(
     fileFilter: utilities.fileFilter,
   }).single("image"),
 );
-
 app.use(auth);
 
 app.put("/post-image", (req, res, next) => {
@@ -96,6 +96,10 @@ app.use((error, req, res, next) => {
 mongoose
   .connect(MONGO_URL)
   .then(() => {
+    // Use this if you have no SSL certificate.
+    // app.listen(8080);
+
+    // Otherwise, uncomment this.
     https
       .createServer({ key: privateKey, cert: certificate }, app)
       .listen(8080);
