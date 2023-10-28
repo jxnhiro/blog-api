@@ -20,8 +20,8 @@ const { warn } = require("console");
 const MONGO_URL = process.env.MONGODB_URI;
 
 const app = express();
-const privateKey = fs.readFileSync("server.key");
-const certificate = fs.readFileSync("server.cert");
+const privateKey = fs.readFileSync(path.join(__dirname, "ssl", "server.key"));
+const certificate = fs.readFileSync(path.join(__dirname, "ssl", "server.cert"));
 
 app.use("/images", express.static(path.join(__dirname, "images")));
 
