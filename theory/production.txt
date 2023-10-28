@@ -1,0 +1,4 @@
+In production we want to:
+1. Put everything sensitive hardcoded elements in .env.
+2. Use `helmet` for security headers.
+3. Use `compression` to compress assets for faster response time for CSS and JavaScript code.

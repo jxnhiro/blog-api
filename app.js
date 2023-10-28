@@ -6,6 +6,8 @@ const cors = require("cors");
 const path = require("path");
 const multer = require("multer");
 const { graphqlHTTP } = require("express-graphql");
+const helmet = require("helmet");
+const compression = require("compression");
 
 const utilities = require("./utilities/utilities");
 
@@ -19,6 +21,8 @@ const app = express();
 
 app.use("/images", express.static(path.join(__dirname, "images")));
 
+app.use(helmet());
+app.use(compression());
 app.use(cors());
 app.use(bodyParser.json());
 app.use(
