@@ -8,16 +8,20 @@ const multer = require("multer");
 const { graphqlHTTP } = require("express-graphql");
 const helmet = require("helmet");
 const compression = require("compression");
+const https = require("https");
+const fs = require("fs");
 
 const utilities = require("./utilities/utilities");
-
 const graphqlSchema = require("./graphql/schema");
 const graphqlResolver = require("./graphql/resolvers");
 const auth = require("./middlewares/auth");
+const { warn } = require("console");
 
 const MONGO_URL = process.env.MONGODB_URI;
 
 const app = express();
+const privateKey = fs.readFileSync("server.key");
+const certificate = fs.readFileSync("server.cert");
 
 app.use("/images", express.static(path.join(__dirname, "images")));
 
@@ -92,7 +96,9 @@ app.use((error, req, res, next) => {
 mongoose
   .connect(MONGO_URL)
   .then(() => {
-    app.listen(8080);
+    https
+      .createServer({ key: privateKey, cert: certificate }, app)
+      .listen(8080);
     console.log("Connected to MongoDB Database");
   })
   .catch((err) => {
