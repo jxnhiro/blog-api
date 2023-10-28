@@ -43,13 +43,9 @@ app.put("/post-image", (req, res, next) => {
     });
   }
 
-  console.log("Old path", req.body.oldPath);
-
   if (req.body.oldPath !== "undefined") {
     utilities.clearImage(req.body.oldPath);
   }
-
-  console.log("New path", req.file.path);
 
   return res.status(201).json({
     message: "File stored",

@@ -59,7 +59,7 @@ module.exports = buildSchema(`
   
   type RootQuery {
     login(email: String!, password: String!): AuthData!
-    posts(page: Int): PostData!
+    posts(page: Int!): PostData!
     post(postId: ID!): Post!
     status: String!
   }
