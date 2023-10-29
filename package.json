@@ -23,7 +23,8 @@
   "version": "1.0.0",
   "main": "app.js",
   "scripts": {
-    "test": "mocha",
+    "test-controllers": "mocha test/controllers",
+    "test-middlewares": "mocha test/middlewares",
     "start": "nodemon app.js"
   },
   "author": "",
