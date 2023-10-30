@@ -8,19 +8,20 @@ const User = require("../../models/user");
 const mongoose = require("mongoose");
 
 describe("Login Tests", function () {
-  before(function (done) {
-    mongoose
-      .connect(process.env.MONGOTESTDB_URI)
-      .then(() => {
-        const dummyUser = User({
-          email: "dummy@example.com",
-          password: "dummy",
-          name: "Dummy",
-        });
+  before(async function () {
+    try {
+      await mongoose.connect(process.env.MONGOTESTDB_URI);
 
-        return dummyUser.save();
-      })
-      .then(() => done());
+      const dummyUser = User({
+        email: "dummy@example.com",
+        password: "dummy",
+        name: "Dummy",
+      });
+
+      return dummyUser.save();
+    } catch (err) {
+      throw err;
+    }
   });
 
   it("should reject authentication if user is not found", async function () {
@@ -80,12 +81,13 @@ describe("Login Tests", function () {
     await AuthController.logIn(req, res, () => {});
   });
 
-  after(function (done) {
-    User.deleteMany({})
-      .then(() => {
-        return mongoose.disconnect();
-      })
-      .then(() => done());
+  after(async function () {
+    try {
+      await User.deleteMany({});
+      await mongoose.disconnect();
+    } catch (err) {
+      throw err;
+    }
   });
 });
 
