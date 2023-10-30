@@ -70,11 +70,23 @@ exports.logIn = async (req, res, next) => {
     return next(error);
   }
 
+  let compare;
+
   try {
-    await bcrypt.compare(password, user.password);
+    compare = await bcrypt.compare(password, user.password);
   } catch (err) {
+    const error = new Error(
+      "Cannot compare password and the email's password.",
+    );
+    error.statusCode = 500;
+    return next(error);
+  }
+
+  console.log(`Compare: ${compare}`);
+
+  if (!compare) {
     const error = new Error("Wrong password");
-    error.statusCode = 401;
+    error.statusCode = 403;
     return next(error);
   }
 
@@ -89,7 +101,7 @@ exports.logIn = async (req, res, next) => {
     },
   );
 
-  res.status(200).json({
+  return res.status(200).json({
     message: "Successfully logged in",
     userId: user._id.toString(),
     token: token,
