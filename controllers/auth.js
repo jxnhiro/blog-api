@@ -6,8 +6,6 @@ const env = require("dotenv").config();
 const User = require("../models/user");
 const utilities = require("../utilities/utilities");
 
-const JWT_SECRET = process.env.JWT_SECRET;
-
 exports.createUser = async (req, res, next) => {
   const errors = validationResult(req);
 
@@ -20,6 +18,22 @@ exports.createUser = async (req, res, next) => {
   const name = req.body.name;
   const email = req.body.email;
   const password = req.body.password;
+
+  let searchedUser;
+
+  try {
+    searchedUser = await User.findOne({ email: email });
+  } catch (err) {
+    const error = new Error("Failed to access database");
+    error.statusCode = 500;
+    return next(error);
+  }
+
+  if (searchedUser) {
+    const error = new Error("User has already registered");
+    error.statusCode = 409;
+    return next(error);
+  }
 
   let hashedPassword;
 
@@ -51,6 +65,8 @@ exports.createUser = async (req, res, next) => {
 };
 
 exports.logIn = async (req, res, next) => {
+  const JWT_SECRET = process.env.JWT_SECRET;
+
   const email = req.body.email;
   const password = req.body.password;
 
@@ -82,24 +98,36 @@ exports.logIn = async (req, res, next) => {
     return next(error);
   }
 
-  console.log(`Compare: ${compare}`);
-
   if (!compare) {
     const error = new Error("Wrong password");
     error.statusCode = 403;
     return next(error);
   }
 
-  const token = jwt.sign(
-    {
-      email: user.email,
-      userId: user._id.toString(),
-    },
-    JWT_SECRET,
-    {
-      expiresIn: "1h",
-    },
-  );
+  let token;
+
+  try {
+    token = jwt.sign(
+      {
+        email: user.email,
+        userId: user._id.toString(),
+      },
+      JWT_SECRET,
+      {
+        expiresIn: "1h",
+      },
+    );
+  } catch (err) {
+    const error = new Error("Unable to make JWT Token");
+    error.statusCode = 500;
+    return next(error);
+  }
+
+  if (!token) {
+    const error = new Error("No token");
+    error.statusCode = 500;
+    return next(error);
+  }
 
   return res.status(200).json({
     message: "Successfully logged in",

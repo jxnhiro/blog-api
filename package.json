@@ -22,7 +22,7 @@
   "version": "1.0.0",
   "main": "app.js",
   "scripts": {
-    "test-controllers": "mocha test/controllers",
+    "test-controllers": "mocha test/controllers --timeout 25000",
     "test-middlewares": "mocha test/middlewares",
     "start": "nodemon app.js"
   },

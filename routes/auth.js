@@ -10,16 +10,7 @@ const isAuth = require("../middlewares/is-auth");
 router.post(
   "/signup",
   [
-    body("email")
-      .isEmail()
-      .withMessage("Please enter a valid email")
-      .custom((value, { req }) => {
-        return User.findOne({ email: value }).then((userDoc) => {
-          if (userDoc) {
-            return Promise.reject("Email address already exists.");
-          }
-        });
-      }),
+    body("email").isEmail().withMessage("Please enter a valid email"),
     body("password").trim().isLength({ min: 5 }),
     body("name").trim().isLength({ min: 1 }),
   ],
