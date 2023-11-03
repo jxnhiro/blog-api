@@ -1,6 +1,6 @@
 
 # blog-api
-Blog API is a MongoDB and ExpressJS based API, with GraphQL, REST, SQL and NoSQL Architecture.
+Blog API is a MongoDB and ExpressJS based API, with REST, WebSocket, GraphQL, SQL and NoSQL Architecture.
 
 ## What I have learnt
 
